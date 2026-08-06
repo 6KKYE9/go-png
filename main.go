@@ -1,10 +1,12 @@
-﻿// go-png 是一个零依赖的 PNG 图片生成小工具（纯标准库）。
+﻿// go-png 是 PNG 图片生成小工具（用标准库自己写 PNG 编码）。
 // 支持：纯色背景、渐变背景、画实心矩形、画点阵文字（内置 5x7 像素字体）。
-// 输出标准 PNG 文件（RGB，无压缩 zlib 存储块，浏览器/系统均可识别）。
+// 输出标准 PNG 文件（RGB，IDAT 用标准库 zlib 压缩，浏览器/系统均可识别）。
 package main
 
 import (
 	"bufio"
+	"bytes"
+	"compress/zlib"
 	"encoding/binary"
 	"flag"
 	"fmt"
@@ -119,9 +121,16 @@ func (im *Image) Save(path string) error {
 		row := im.Pix[y*im.W*3 : (y+1)*im.W*3]
 		raw = append(raw, row...)
 	}
-	// 用 zlib 存储（无压缩）编码：0x78 0x01 + raw + adler32
-	compressed := zlibStore(raw)
-	writeChunk(w, "IDAT", compressed)
+	// 用标准库 zlib 压缩 IDAT（替代原来的无压缩存储块，体积小很多）
+	var buf bytes.Buffer
+	zw := zlib.NewWriter(&buf)
+	if _, err := zw.Write(raw); err != nil {
+		return err
+	}
+	if err := zw.Close(); err != nil {
+		return err
+	}
+	writeChunk(w, "IDAT", buf.Bytes())
 
 	// IEND
 	writeChunk(w, "IEND", nil)
@@ -140,45 +149,6 @@ func writeChunk(w *bufio.Writer, typ string, data []byte) {
 	var crcBuf [4]byte
 	binary.BigEndian.PutUint32(crcBuf[:], crc)
 	w.Write(crcBuf[:])
-}
-
-// zlibStore 用 zlib 的存储（无压缩）方式封装数据，并补 adler32 校验。
-func zlibStore(data []byte) []byte {
-	out := []byte{0x78, 0x01} // zlib 头：deflate + 存储
-	// 按 65535 分块
-	const max = 65535
-	for i := 0; i < len(data); i += max {
-		end := i + max
-		if end > len(data) {
-			end = len(data)
-		}
-		chunk := data[i:end]
-		bfinal := 0
-		if end == len(data) {
-			bfinal = 1
-		}
-		// deflate 存储块头：BFINAL(1) + BTYPE(00) + LEN(2) + NLEN(2)
-		out = append(out, byte(bfinal))
-		out = append(out, byte(len(chunk)), byte(len(chunk)>>8))
-		nlen := ^uint16(len(chunk))
-		out = append(out, byte(nlen), byte(nlen>>8))
-		out = append(out, chunk...)
-	}
-	// adler32（大端）
-	a := adler32(data)
-	out = append(out, byte(a>>24), byte(a>>16), byte(a>>8), byte(a))
-	return out
-}
-
-// adler32 计算 adler-32 校验和。
-func adler32(data []byte) uint32 {
-	const mod = 65521
-	var s1, s2 uint32 = 1, 0
-	for _, b := range data {
-		s1 = (s1 + uint32(b)) % mod
-		s2 = (s2 + s1) % mod
-	}
-	return (s2 << 16) | s1
 }
 
 // parseColor 把 "#rrggbb" 或 "rrggbb" 解析成 RGB。

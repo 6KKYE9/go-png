@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -96,9 +97,17 @@ func TestDrawText(t *testing.T) {
 	}
 }
 
-func TestZlibStoreRoundTrip(t *testing.T) {
-	data := []byte("hello go-png zlib store test")
-	compressed := zlibStore(data)
+func TestZlibRoundTrip(t *testing.T) {
+	data := []byte(strings.Repeat("hello go-png zlib test ", 200))
+	var buf bytes.Buffer
+	zw := zlib.NewWriter(&buf)
+	if _, err := zw.Write(data); err != nil {
+		t.Fatalf("zlib 写入失败: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("zlib 关闭失败: %v", err)
+	}
+	compressed := buf.Bytes()
 	r, err := zlib.NewReader(bytes.NewReader(compressed))
 	if err != nil {
 		t.Fatalf("zlib.NewReader 失败: %v", err)
@@ -109,6 +118,9 @@ func TestZlibStoreRoundTrip(t *testing.T) {
 		t.Fatalf("inflate 失败: %v", err)
 	}
 	if !bytes.Equal(imported, data) {
-		t.Fatalf("zlib 往返不一致: %q vs %q", imported, data)
+		t.Fatalf("zlib 往返不一致: len=%d vs %d", len(imported), len(data))
+	}
+	if len(compressed) >= len(data) {
+		t.Fatalf("压缩未生效: 压缩后 %d >= 原始 %d", len(compressed), len(data))
 	}
 }
