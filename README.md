@@ -1,6 +1,6 @@
 # go-png
 
-PNG 编码自己写（IHDR/IEND/IDAT 块、CRC、像素封装全手写），IDAT 用标准库 `compress/zlib` 压缩，没依赖第三方库。
+PNG 编码自己写（IHDR/IEND/IDAT 块、CRC、像素封装全手写），IDAT 用标准库 `compress/zlib` 压缩。
 
 功能：
 
