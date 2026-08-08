@@ -1,5 +1,7 @@
 # go-png
 
+又在终端里为个编码解码去开浏览器搜网页？别了，一行命令的事。
+
 PNG 编码自己写（IHDR/IEND/IDAT 块、CRC、像素封装全手写），IDAT 用标准库 `compress/zlib` 压缩。
 
 功能：
