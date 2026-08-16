@@ -1,4 +1,4 @@
-﻿# build artifacts stay out of the repo
+# build artifacts stay out of the repo
 *.exe
 *.exe~
 *.dll

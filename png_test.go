@@ -1,4 +1,4 @@
-﻿package main
+package main
 
 import (
 	"bytes"
@@ -114,9 +114,9 @@ func TestParseColor(t *testing.T) {
 	}{
 		{"#ff8000", RGB{255, 128, 0}, false},
 		{"ff8000", RGB{255, 128, 0}, false},
-		{"#FF8000", RGB{255, 128, 0}, false},   // 大写
+		{"#FF8000", RGB{255, 128, 0}, false},     // 大写
 		{"  #ff8000  ", RGB{255, 128, 0}, false}, // 带空格
-		{"#f0a", RGB{255, 0, 170}, false},      // 三位简写
+		{"#f0a", RGB{255, 0, 170}, false},        // 三位简写
 		{"f0a", RGB{255, 0, 170}, false},
 		{"#000", RGB{0, 0, 0}, false},
 		{"#fff", RGB{255, 255, 255}, false},
